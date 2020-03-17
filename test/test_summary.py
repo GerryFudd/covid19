@@ -18,50 +18,56 @@ def test_add_day_count_too_small():
 
 def test_report_exponential():
   summary = CategorySummary('foo')
-  summary.add_day(1, 5)
-  summary.add_day(2, 6)
-  summary.add_day(3, 7)
-  summary.add_day(4, 9)
-  summary.add_day(5, 10)
-  summary.add_day(6, 12)
-  summary.add_day(7, 15)
-  summary.add_day(8, 18)
-  summary.add_day(9, 21)
-  summary.add_day(10, 25)
-  summary.add_day(11, 30)
+  summary.add_day(6, 600)
+  summary.add_day(7, 720)
+  summary.add_day(8, 864)
+  summary.add_day(9, 1034)
+  summary.add_day(10, 1244)
+  summary.add_day(11, 1493)
+  summary.add_day(12, 1792)
+  summary.add_day(13, 2150)
+  summary.add_day(14, 2580)
+  summary.add_day(15, 3096)
+  summary.add_day(16, 3715)
   report = summary.report()
   assert report.overall.ratio >= 1.19
   assert report.overall.ratio <= 1.21
   assert report.overall.r2 >= 0.99
   assert report.location == 'foo'
-  assert report.count == 30
-  assert report.last_week_deltas.slope >= 0.3
-  assert report.last_week_deltas.r2 >= 0.9
+  assert report.count == 3715
+  assert report.days == 11
+  assert report.last_week_daily_new_cases.slope > 64 # daily new cases is within 90% of expected
+  assert report.last_week_daily_new_cases.expected_slope > 71 # predict slope from middle of last week
+  assert report.last_week_daily_new_cases.expected_slope < 72 # predict slope from middle of last week
+  assert report.last_week_daily_new_cases.r2 >= 0.9
 
 def test_report_logistic():
   summary = CategorySummary('foo')
-  summary.add_day(2, 6)
-  summary.add_day(3, 7)
-  summary.add_day(4, 8)
-  summary.add_day(5, 9)
-  summary.add_day(6, 11)
-  summary.add_day(7, 13)
-  summary.add_day(8, 14)
-  summary.add_day(9, 16)
-  summary.add_day(10, 18)
-  summary.add_day(11, 20)
-  summary.add_day(12, 23)
-  summary.add_day(13, 25)
-  summary.add_day(14, 27)
-  summary.add_day(15, 30)
-  summary.add_day(16, 32)
+  summary.add_day(1, 427)
+  summary.add_day(2, 504)
+  summary.add_day(3, 593)
+  summary.add_day(4, 695)
+  summary.add_day(5, 812)
+  summary.add_day(6, 943)
+  summary.add_day(7, 1091)
+  summary.add_day(8, 1254)
+  summary.add_day(9, 1433)
+  summary.add_day(10, 1627)
+  summary.add_day(11, 1833)
+  summary.add_day(12, 2049)
+  summary.add_day(13, 2273)
+  summary.add_day(14, 2500)
+  summary.add_day(15, 2727)
+  summary.add_day(16, 2951)
   report = summary.report()
   assert report.overall.ratio >= 1.1
   assert report.overall.r2 >= 0.98
   assert report.location == 'foo'
-  assert report.count == 32
-  assert report.last_week_deltas.slope < 0.05 # logistic model should display a small second derivative near inflection
-  assert report.last_week_deltas.r2 < 0.1 # regression on a flat line will have a small r
+  assert report.count == 2951
+  assert report.days == 16
+  assert report.last_week_daily_new_cases.slope < 7.5 # logistic model should display a small second derivative near inflection
+  assert report.last_week_daily_new_cases.expected_slope > 38 # logistic model should display a small second derivative near inflection
+  assert report.last_week_daily_new_cases.expected_slope < 39 # logistic model should display a small second derivative near inflection
 
 def test_missing_days():
   summary = CategorySummary('foo')

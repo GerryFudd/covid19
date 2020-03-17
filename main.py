@@ -26,5 +26,6 @@ with open(source_file_name) as f:
 
 for location in summaries:
   report = summaries[location].report()
-  with open(f'{directory_name}/{location}.json', 'w') as f:
-    f.write(dumps(report, indent=2))
+  if report.count > 0:
+    with open(f'{directory_name}/{location}.json', 'w') as f:
+      f.write(dumps(report, indent=2))

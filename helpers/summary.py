@@ -4,10 +4,11 @@ from statistics import mean
 from .regression import exponential_regression, linear_regression
 
 class ReportSlope(dict):
-  def __init__(self, slope, r2):
-    dict.__init__(self, slope=slope, r2=r2)
+  def __init__(self, slope, r2, expected_slope):
+    dict.__init__(self, slope=slope, r2=r2, expected_slope=expected_slope)
     self.slope = slope
     self.r2 = r2
+    self.expected_slope = expected_slope
 
 class ReportRatio(dict):
   def __init__(self, ratio, r2):
@@ -16,17 +17,16 @@ class ReportRatio(dict):
     self.r2 = r2
 
 class CategoryReport(dict):
-  def __init__(self, location, count, ratio, r2, last_week_deltas_slope, last_week_deltas_r2, expected_exponential_second_derivative):
+  def __init__(self, location, count, ratio, r2, last_week_deltas_slope, last_week_deltas_r2, expected_exponential_second_derivative, days):
     self.overall = ReportRatio(ratio, r2)
-    self.last_week_deltas = ReportSlope(last_week_deltas_slope, last_week_deltas_r2)
+    self.last_week_daily_new_cases = ReportSlope(last_week_deltas_slope, last_week_deltas_r2, expected_exponential_second_derivative)
     dict.__init__(
-      self, location=location, count=count, overall=self.overall, 
-      last_week_deltas=self.last_week_deltas,
-      expected_exponential_second_derivative=expected_exponential_second_derivative
+      self, location=location, count=count, days=days, overall=self.overall, 
+      last_week_daily_new_cases=self.last_week_daily_new_cases
     )
     self.location = location
     self.count = count
-    self.expected_exponential_second_derivative=expected_exponential_second_derivative
+    self.days = days
 
 
 class CategorySummary:
@@ -50,13 +50,12 @@ class CategorySummary:
 
   def report(self):
     if self.last_day < 0:
-      return CategoryReport(self.location, 0, 1, 1, 1, 1, 0)
+      return CategoryReport(self.location, 0, 1, 1, 1, 1, 0, 0)
     days_summary_list = []
     for day in self.days:
       days_summary_list.append((day, self.days[day]['count']))
     regression = exponential_regression(days_summary_list)
 
-    expected_exponential_second_derivative = self.total_count * math.log(regression[1]) ** 2
 
     last_week_deltas_summary = []
     while (
@@ -70,11 +69,15 @@ class CategorySummary:
         day,
         delta
       ))
+    # Calculate the second derivative of the exponential in the middle of last week
+    mid_week = self.last_day - len(last_week_deltas_summary) // 2
+    expected_exponential_second_derivative = self.days[mid_week]['count'] * math.log(regression[1]) ** 2
     last_week_deltas_regression = linear_regression(last_week_deltas_summary)
 
     return CategoryReport(
       self.location,
       self.total_count,
+      days=self.last_day - self.first_day + 1,
       ratio=regression[1],
       r2=regression[2],
       last_week_deltas_slope=last_week_deltas_regression[1],
