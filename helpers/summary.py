@@ -84,3 +84,37 @@ class CategorySummary:
       last_week_deltas_r2=last_week_deltas_regression[2],
       expected_exponential_second_derivative=expected_exponential_second_derivative
     )
+
+class OverallSummary:
+  def __init__(self):
+    self.reports = []
+    self.highest_ratio = CategoryReport(
+      ratio=-1,
+      location=None,
+      count=None,
+      r2=None,
+      last_week_deltas_slope=None,
+      last_week_deltas_r2=None,
+      expected_exponential_second_derivative=None,
+      days=None
+    )
+    self.in_slowdown = []
+
+  def add_category(self, summary):
+    report = summary.report()
+    self.reports.append(report)
+    if report.overall.ratio > self.highest_ratio.overall.ratio:
+      self.highest_ratio = report
+    last_week_daily_new_cases = report.last_week_daily_new_cases
+    if (
+      report.days >= 7 and 
+      last_week_daily_new_cases.slope < 0.25 * last_week_daily_new_cases.expected_slope
+    ):
+      self.in_slowdown.append(report)
+    return report
+  
+  def report(self):
+    return {
+      'highest_ratio': self.highest_ratio,
+      'in_slowdown': self.in_slowdown
+    }

@@ -4,7 +4,7 @@ from os import mkdir
 from datetime import date
 from json import dumps
 
-from helpers.summary import CategorySummary
+from helpers.summary import CategorySummary, OverallSummary
 from input_output.get_latest_file import get_latest_file
 
 directory_name = f'results/{date.today().isoformat()}'
@@ -24,8 +24,12 @@ with open(source_file_name) as f:
       summaries[location] = CategorySummary(location)
     summaries[location].add_day(day, count)
 
+overall_summary = OverallSummary()
 for location in summaries:
-  report = summaries[location].report()
+  report = overall_summary.add_category(summaries[location])
   if report.count > 0:
     with open(f'{directory_name}/{location}.json', 'w') as f:
       f.write(dumps(report, indent=2))
+
+with open(f'{directory_name}/__overallReport.json', 'w') as f:
+  f.write(dumps(overall_summary.report(), indent=2))
