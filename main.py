@@ -19,7 +19,7 @@ with open(source_file_name) as f:
   for row in csv.DictReader(f):
     location = row['Entity']
     day = int(row['Year'])
-    count = int(row['Total confirmed cases of COVID-19'])
+    count = int(row['Total confirmed cases of COVID-19 (cases)'])
     if summaries.get(location) == None:
       summaries[location] = CategorySummary(location)
     summaries[location].add_day(day, count)
