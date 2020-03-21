@@ -1,5 +1,6 @@
 import math
 from statistics import mean
+from pandas import DataFrame
 
 from .regression import exponential_regression, linear_regression
 
@@ -30,59 +31,66 @@ class CategoryReport(dict):
 
 
 class CategorySummary:
-  def __init__(self, location):
+  def __init__(self, location, dataframe):
     self.location = location
-    self.days = {}
-    self.total_count = -1
-    self.last_day = -1
-    self.first_day = math.inf
+    # only keep rows with
+    # - the provided location and
+    # - count at least 5
+    # only keep columns 'day' and 'count'
+    # set the index to day
+    self.dataframe = dataframe[dataframe.location == location].query('count >= 5').filter(['day', 'count']).set_index('day')
 
-  def add_day(self, day, count):
-    # Ignore days where the count is less than 5 to avoid throwing off
-    # the regression model with isolated cases that didn't spread for
-    # a long time.
-    if count < 5:
-      return
-    self.days[day] = {'count': count}
-    self.total_count = max(self.total_count, count)
-    self.last_day = max(self.last_day, day)
-    self.first_day = min(self.first_day, day)
+  @property
+  def last_day(self):
+    if self.dataframe.shape[0] == 0:
+      return -1
+    return int(self.dataframe.index.max())
+
+  @property
+  def first_day(self):
+    if self.dataframe.shape[0] == 0:
+      return math.inf
+    return int(self.dataframe.index.min())
+
+  @property
+  def total_count(self):
+    if self.dataframe.shape[0] == 0:
+      return -1
+    return int(self.dataframe['count'].max())
+
+  def new_cases(self):
+    count_list = self.dataframe['count'].tolist()
+    previous_day_count_list = [0] + count_list[:-1]
+    new_cases = list(map(lambda pair: pair[0] - pair[1], zip(count_list, previous_day_count_list)))
+    return DataFrame(data={'day': self.dataframe.index.tolist(), 'new_cases': new_cases}).set_index('day')
 
   def report(self):
     if self.last_day < 0:
       return CategoryReport(self.location, 0, 1, 1, 1, 1, 0, 0)
-    days_summary_list = []
-    for day in self.days:
-      days_summary_list.append((day, self.days[day]['count']))
-    regression = exponential_regression(days_summary_list)
+    exponential_regression_result = exponential_regression(
+      self.dataframe.index.tolist(), 
+      self.dataframe['count'].tolist()
+    )
 
+    new_cases_frame = self.new_cases()
+    last_week_new_cases = new_cases_frame[new_cases_frame.index > self.last_day - 7]
+    last_week_new_cases_linear_regression_result = linear_regression(
+      last_week_new_cases.index.tolist(),
+      last_week_new_cases['new_cases'].tolist()
+    )
 
-    last_week_deltas_summary = []
-    while (
-      len(last_week_deltas_summary) < 7 and
-      self.days.get(self.last_day - len(last_week_deltas_summary)) != None and
-      self.days.get(self.last_day - len(last_week_deltas_summary) - 1) != None
-    ):
-      day = self.last_day - len(last_week_deltas_summary)
-      delta = self.days[day]['count'] - self.days[day - 1]['count']
-      last_week_deltas_summary.append((
-        day,
-        delta
-      ))
-    # Calculate the second derivative of the exponential in the middle of last week
-    mid_week = self.last_day - len(last_week_deltas_summary) // 2
-    expected_exponential_second_derivative = self.days[mid_week]['count'] * math.log(regression[1]) ** 2
-    last_week_deltas_regression = linear_regression(last_week_deltas_summary)
+    mid_week_day = self.last_day - len(last_week_new_cases) // 2
+    expected_new_cases_slope = self.dataframe.at[mid_week_day, 'count'] * math.log(exponential_regression_result[1]) ** 2
 
     return CategoryReport(
       self.location,
       self.total_count,
       days=self.last_day - self.first_day + 1,
-      ratio=regression[1],
-      r2=regression[2],
-      last_week_deltas_slope=last_week_deltas_regression[1],
-      last_week_deltas_r2=last_week_deltas_regression[2],
-      expected_exponential_second_derivative=expected_exponential_second_derivative
+      ratio=exponential_regression_result[1],
+      r2=exponential_regression_result[2],
+      last_week_deltas_slope=last_week_new_cases_linear_regression_result[1],
+      last_week_deltas_r2=last_week_new_cases_linear_regression_result[2],
+      expected_exponential_second_derivative=expected_new_cases_slope
     )
 
 class OverallSummary:
