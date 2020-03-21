@@ -4,13 +4,13 @@ This is a tool to pull data from [ourworldindata.org](https://ourworldindata.org
 
 ## Setup
 
-There are two dependencies for this project (as listed in [requirements.txt](./requirements.txt)), `pytest` and `selenium`. You can install them with
+There are a few dependencies for this project (as listed in [requirements.txt](./requirements.txt)). You can install them with
 
 ```
 pip3 install -U $(cat requirements.txt)
 ```
 
-Selenium also requires an appropriate chrome driver to pull the csv file from the website. The appropriate driver for the version of Chrome that you have installed may be downloaded from [here](https://sites.google.com/a/chromium.org/chromedriver/downloads), unzipped, and then moved to somewhere on your `PATH` (eg /usr/local/bin).
+Selenium requires an appropriate chrome driver to pull the csv file from the website. The appropriate driver for the version of Chrome that you have installed may be downloaded from [here](https://sites.google.com/a/chromium.org/chromedriver/downloads), unzipped, and then moved to somewhere on your `PATH` (eg /usr/local/bin).
 
 ## Tests
 
