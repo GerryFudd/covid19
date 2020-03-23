@@ -60,9 +60,8 @@ class CategorySummary:
 
   def new_cases(self):
     count_list = self.dataframe['count'].tolist()
-    previous_day_count_list = [0] + count_list[:-1]
-    new_cases = list(map(lambda pair: pair[0] - pair[1], zip(count_list, previous_day_count_list)))
-    return DataFrame(data={'day': self.dataframe.index.tolist(), 'new_cases': new_cases}).set_index('day')
+    new_cases = list(map(lambda pair: pair[0] - pair[1], zip(count_list[1:], count_list[:-1])))
+    return DataFrame(data={'day': self.dataframe.index.tolist()[1:], 'new_cases': new_cases}).set_index('day')
 
   def report(self):
     if self.last_day < 0:
